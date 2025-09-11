@@ -62,6 +62,15 @@ p1 {
     color: orange; 
     font-weight: bold;
 }
+ .chat-window {
+        max-width: 600px;
+        margin: 20px auto;
+    }
+    .chat-box {
+        height: 300px;
+        overflow-y: auto;
+        padding: 5px;
+	font-size: 26px;
 </style>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -70,38 +79,49 @@ p1 {
 <title>Chatx32</title>
 </head>
 <body>
-</center>
-  <br>
-  <div class="chat-box">
-     <div style="color: white" class="header">Chatx32 V0.0.1 </div>
-   <div id="chat" style="height: 300px; overflow-y: scroll;">
-      <ul style="color: white;" id="messages">
-      <span class="message-time"></span>
-      </ul>
-      <div id="typing-notification" style="color: gray; text-align: center; margin-top: 5px; min-height: 20px;"></div>
-      </div>
-      </div>
-           <center><form id="send-message"> <input id="chat-txt" type="text" size="50" autocomplete="off" required/> <button id="chat-btn" type="submit" value="PLAY" onclick="play()">Submit</button>
-
-
-           </form> </center>
+<div class="chat-window window">
+    <div class="title-bar">
+        <div class="title-bar-text">Chatx32 V0.0.1</div>
+        <div class="title-bar-controls">
+            <button aria-label="Minimize"></button>
+            <button aria-label="Maximize"></button>
+            <button aria-label="Close"></button>
+        </div>
+    </div>
+    <div class="window-body">
+        <div id="chat" class="chat-box">
+            <ul id="messages">
+                <span class="message-time"></span>
+            </ul>
+        </div>
+        <div id="typing-notification" class="typing-notification"></div>
+        <form id="send-message" style="margin-top: 10px;">
+            <div class="field-row">
+                <input id="chat-txt" type="text" autocomplete="off" required placeholder="Type your message..." style="width: 100%;">
+                <button id="chat-btn" type="submit" onclick="play()">Send</button>
+            </div>
+        </form>
+    </div>
+</div>
 <audio id="audio" src="msn.mp3"></audio>
            <hr>
            <br>
-           <center><b><h1 style="color: lime; font-size: 23px">Spatify.exe</h1></b></center>
-           <div class="music-controls">
-               <label for="music-selector">Select Music:</label>
-               <select id="music-selector" onchange="loadAndPlaySelectedMusic()">
-                   <option value="">-- No Music --</option>
-                   <option value="lotus.mp3">Lotus</option>
-                   <option value="music/Body Measurement.mp3">Body Measurement (Nintendo)</option>
-                   <option value="music/Editing a Mii.mp3">Editing a Mii (Nintendo)</option>
-                 
-               </select>
-               <button id="play-music-btn" onclick="playCurrentMusic()">Play</button>
-               <button id="pause-music-btn" onclick="pauseCurrentMusic()">Pause</button>
-               <button id="stop-music-btn" onclick="stopCurrentMusic()">Stop</button>
-           </div>
+           <div class="window-body">
+        <center><b><h1 style="color: lime; font-size: 23px">Spatify.exe</h1></b></center>
+        <div class="music-controls">
+            <label for="music-selector">Select Music:</label>
+            <select id="music-selector" onchange="loadAndPlaySelectedMusic()">
+                <option value="">-- No Music --</option>
+                <option value="lotus.mp3">Lotus</option>
+                <option value="music/Body Measurement.mp3">Body Measurement (Nintendo)</option>
+                <option value="music/Editing a Mii.mp3">Editing a Mii (Nintendo)</option>
+            </select>
+            <button id="play-music-btn" onclick="playCurrentMusic()">Play</button>
+            <button id="pause-music-btn" onclick="pauseCurrentMusic()">Pause</button>
+            <button id="stop-music-btn" onclick="stopCurrentMusic()">Stop</button>
+        </div>
+    </div>
+</div>
          <hr>
            <audio id="background-music-player" loop volume="0.1"></audio>
            <center><h1>What is <b style="color:green;">Chatx32?</b></h1></center>
