@@ -1,12 +1,12 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyAcyqPpPq0dXLez3MINPXfYvy6LnOCkbPM",
-  authDomain: "cringechat-cc04f.firebaseapp.com",
-  databaseURL: "https://cringechat-cc04f-default-rtdb.firebaseio.com",
-  projectId: "cringechat-cc04f",
-  storageBucket: "cringechat-cc04f.appspot.com",
-  messagingSenderId: "1078798953034",
-  appId: "1:1078798953034:web:78081799548359f3e294b3",
-  measurementId: "G-FGHETW90V3"
+    apiKey: "AIzaSyAcyqPpPq0dXLez3MINPXfYvy6LnOCkbPM",
+    authDomain: "cringechat-cc04f.firebaseapp.com",
+    databaseURL: "https://cringechat-cc04f-default-rtdb.firebaseio.com",
+    projectId: "cringechat-cc04f",
+    storageBucket: "cringechat-cc04f.appspot.com",
+    messagingSenderId: "1078798953034",
+    appId: "1:1078798953034:web:78081799548359f3e294b3",
+    measurementId: "G-FGHETW90V3"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -31,6 +31,7 @@ const coloredUsernameHtml = `<span style="color:${randomColor}">${username}</spa
 
 const typingRef = firebase.database().ref('typing');
 const usersRef = firebase.database().ref('users');
+const pingsRef = db.ref('pings'); // New reference for pings
 
 const typingNotificationArea = document.getElementById("typing-notification");
 const backgroundMusicPlayer = document.getElementById("background-music-player");
@@ -38,6 +39,7 @@ const musicSelector = document.getElementById("music-selector");
 
 const joinSound = new Audio('sound/buddyin.mp3');
 const leaveSound = new Audio('sound/buddyout.mp3');
+const mentionSound = new Audio('sound/mention.mp3'); // New sound for mentions
 
 let typingTimeout;
 let messageSendTimeout;
@@ -134,19 +136,34 @@ function postChat(e) {
 
     const timestamp = Date.now();
     const chatTxt = document.getElementById("chat-txt");
-    const message = chatTxt.value;
+    let message = chatTxt.value;
     chatTxt.value = "";
 
     typingRef.child(username).remove();
-
-    let formattedMessage = message
-        .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:blue;">$1</a>');
 
     if (message.trim() === "") {
         updateTypingNotificationDisplay();
         return;
     }
 
+    // New logic to handle mentions
+    const mentionRegex = /@(\w+)/g;
+    let formattedMessage = message.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:blue;">$1</a>');
+    let mentionedUsers = [];
+
+    // Check for mentions in the message
+    const matches = message.matchAll(mentionRegex);
+    for (const match of matches) {
+        const mentionedUsername = match[1];
+        mentionedUsers.push(mentionedUsername);
+        // Replace the plain text mention with a styled HTML one
+        formattedMessage = formattedMessage.replace(
+            `@${mentionedUsername}`,
+            `<span class="mention">@${mentionedUsername}</span>`
+        );
+    }
+
+    // Send the message to the database
     if (message === "!help") {
         db.ref("messages/" + timestamp).set({
             usr: "sYs (bot)",
@@ -158,6 +175,18 @@ function postChat(e) {
             msg: formattedMessage,
         });
     }
+
+    // If there were mentions, send a ping to each mentioned user
+    mentionedUsers.forEach(mentionedUsername => {
+        // Only ping the user if they're not the sender
+        if (mentionedUsername !== username) {
+            pingsRef.child(mentionedUsername).push({
+                sender: username,
+                timestamp: timestamp,
+                read: false
+            });
+        }
+    });
 
     updateTypingNotificationDisplay();
     scrollToBottom();
@@ -210,6 +239,50 @@ function stopCurrentMusic() {
 }
 
 function play() {
-  var audio = document.getElementById("audio");
-  audio.play();
+    var audio = document.getElementById("audio");
+    audio.play();
 }
+
+// --- NEW PING/NOTIFICATION SYSTEM ---
+const userPingsRef = pingsRef.child(username);
+let unreadPingsCount = 0;
+const originalTitle = document.title;
+
+userPingsRef.on('child_added', function(snapshot) {
+    const pingData = snapshot.val();
+    // Only count unread pings
+    if (!pingData.read) {
+        unreadPingsCount++;
+        updatePageTitle();
+        mentionSound.play().catch(e => console.error("Failed to play mention sound:", e));
+    }
+});
+
+function updatePageTitle() {
+    if (unreadPingsCount > 0) {
+        const pingCountDisplay = unreadPingsCount > 9 ? "9+" : unreadPingsCount;
+        document.title = `(${pingCountDisplay}) ${originalTitle}`;
+    } else {
+        document.title = originalTitle;
+    }
+}
+
+// When the user focuses on the window, clear the pings and reset the title
+window.addEventListener('focus', () => {
+    if (unreadPingsCount > 0) {
+        // Set a timeout to prevent an overwhelming number of updates
+        setTimeout(() => {
+            userPingsRef.once('value', snapshot => {
+                const updates = {};
+                snapshot.forEach(childSnapshot => {
+                    updates[childSnapshot.key + '/read'] = true;
+                });
+                if (Object.keys(updates).length > 0) {
+                    userPingsRef.update(updates);
+                }
+            });
+            unreadPingsCount = 0;
+            updatePageTitle();
+        }, 500); // 500ms delay to group updates
+    }
+});
