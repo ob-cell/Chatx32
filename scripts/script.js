@@ -191,25 +191,57 @@ function postChat(e) {
     scrollToBottom();
 }
 
-const fetchChat = db.ref("messages");
-fetchChat.on("child_added", function(snapshot) {
-    const messages = snapshot.val();
+function displayMessage(messageData) {
+    const messagesElement = document.getElementById("messages");
     let msgContent = '';
-    if (messages.usr) {
-        msgContent = `<li>${messages.usr} : ${messages.msg}</li>`;
-    } else {
-        msgContent = `<li>${messages.msg}</li>`;
-    }
-    document.getElementById("messages").innerHTML += msgContent;
-    scrollToBottom();
-});
 
+    if (messageData.usr) {
+        msgContent = `<li>${messageData.usr} : ${messageData.msg}</li>`;
+    } else {
+        msgContent = `<li>${messageData.msg}</li>`;
+    }
+
+    messagesElement.innerHTML += msgContent;
+    scrollToBottom();
+}
+
+// Function to scroll the chat box to the bottom
 function scrollToBottom() {
     const chatBox = document.querySelector(".chat-box");
     if (chatBox) {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 }
+
+// First, fetch all existing messages once to populate the chat history
+const messagesRef = db.ref("messages");
+messagesRef.once("value", snapshot => {
+    let lastKey = null; // Variable to hold the key of the last message
+
+    // Load initial messages
+    snapshot.forEach(childSnapshot => {
+        displayMessage(childSnapshot.val());
+        lastKey = childSnapshot.key;
+    });
+
+    // After the initial load, set up a listener for new messages
+    if (lastKey) {
+        // Use a query to listen for messages added after the initial fetch
+        messagesRef.orderByKey().startAt(lastKey).on("child_added", newSnapshot => {
+            // This listener will also fire for the last key in the initial load, so we check
+            if (newSnapshot.key !== lastKey) {
+                displayMessage(newSnapshot.val());
+            }
+        });
+    } else {
+        // If there were no messages initially, just listen for all new ones
+        messagesRef.on("child_added", newSnapshot => {
+            displayMessage(newSnapshot.val());
+        });
+    }
+});
+
+
 
 const userPingsRef = pingsRef.child(username);
 let unreadPingsCount = 0;
@@ -294,64 +326,64 @@ window.play = play;
 
 //Auto-Deletion
 function deleteOldMessages() {
-  // 20 minutes in milliseconds
-  const cutoff = Date.now() - 20 * 60 * 1000;
-  
-  const messagesRef = db.ref("messages");
+    // 20 minutes in milliseconds
+    const cutoff = Date.now() - 20 * 60 * 1000;
 
-  const oldMessagesQuery = messagesRef.orderByChild("createdAt").endAt(cutoff);
+    const messagesRef = db.ref("messages");
 
-  oldMessagesQuery.once("value", (snapshot) => {
-    const updates = {};
-    snapshot.forEach((child) => {
-      updates[child.key] = null; // Set to null to delete the message
-    });
-    
-    if (Object.keys(updates).length > 0) {
-      messagesRef.update(updates)
-        .then(() => {
-          console.log(`Successfully deleted ${Object.keys(updates).length} old messages.`);
-        })
-        .catch((error) => {
-          console.error("Failed to delete old messages:", error);
+    const oldMessagesQuery = messagesRef.orderByChild("createdAt").endAt(cutoff);
+
+    oldMessagesQuery.once("value", (snapshot) => {
+        const updates = {};
+        snapshot.forEach((child) => {
+            updates[child.key] = null; // Set to null to delete the message
         });
-    }
-  });
+
+        if (Object.keys(updates).length > 0) {
+            messagesRef.update(updates)
+                .then(() => {
+                    console.log(`Successfully deleted ${Object.keys(updates).length} old messages.`);
+                })
+                .catch((error) => {
+                    console.error("Failed to delete old messages:", error);
+                });
+        }
+    });
 }
 
 // Run the deletion function every 5 minutes
 setInterval(deleteOldMessages, 5 * 60 * 1000);
 
 document.addEventListener("DOMContentLoaded", function() {
-  const titlebar = document.getElementById("music-window-titlebar");
-  const windowToDrag = titlebar.parentElement;
+    const titlebar = document.getElementById("music-window-titlebar");
+    const windowToDrag = titlebar.parentElement;
 
-  let isDragging = false;
-  let offsetX, offsetY;
+    let isDragging = false;
+    let offsetX, offsetY;
 
-  titlebar.addEventListener("mousedown", (e) => {
-    isDragging = true;
-    offsetX = e.clientX - windowToDrag.offsetLeft;
-    offsetY = e.clientY - windowToDrag.offsetTop;
-    windowToDrag.style.cursor = "grabbing";
-    document.body.style.userSelect = "none";
-  });
+    titlebar.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        offsetX = e.clientX - windowToDrag.offsetLeft;
+        offsetY = e.clientY - windowToDrag.offsetTop;
+        windowToDrag.style.cursor = "grabbing";
+        document.body.style.userSelect = "none";
+    });
 
-  document.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-    
-    // Calculate new position
-    const newX = e.clientX - offsetX;
-    const newY = e.clientY - offsetY;
+    document.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
 
-    // Update element position
-    windowToDrag.style.left = `${newX}px`;
-    windowToDrag.style.top = `${newY}px`;
-  });
+        // Calculate new position
+        const newX = e.clientX - offsetX;
+        const newY = e.clientY - offsetY;
 
-  document.addEventListener("mouseup", () => {
-    isDragging = false;
-    windowToDrag.style.cursor = "grab";
-    document.body.style.userSelect = "auto";
-  });
+        // Update element position
+        windowToDrag.style.left = `${newX}px`;
+        windowToDrag.style.top = `${newY}px`;
+    });
+
+    document.addEventListener("mouseup", () => {
+        isDragging = false;
+        windowToDrag.style.cursor = "grab";
+        document.body.style.userSelect = "auto";
+    });
 });
