@@ -11,7 +11,32 @@
 <body>
 <center><img src="src/img/logo2.png" width="25%" height="25%" onContextMenu="return false" unselectable="on" class="logo"></center>
     
+<div id="popup-overlay" style="display:none;"></div>
 
+<div id="welcome-popup" style="display:none;">
+    <div class="window">
+        <div class="title-bar">
+            <div class="title-bar-text">Welcome!</div>
+            <div class="title-bar-controls">
+                <button aria-label="Close" id="close-popup"></button>
+            </div>
+        </div>
+        <div class="window-body" style="font-size: 18px;">
+            <p>Welcome to ChatX32, let's get you chatting. <br>
+             Please enter your username:</p>
+            <form id="username-form">
+                <div class="field-row">
+                    <label for="username-input">Username:</label>
+                    <input type="text" id="username-input" required>
+                </div>
+                <br>
+                <div class="field-row">
+                    <button type="submit">Enter Chat</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 <div class="chat-window window">
     <div class="title-bar">
         <div class="title-bar-text">Chatx32 V0.0.4</div>

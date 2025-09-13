@@ -1,376 +1,373 @@
-const firebaseConfig = {
-    apiKey: "AIzaSyAcyqPpPq0dXLez3MINPXfYvy6LnOCkbPM",
-    authDomain: "cringechat-cc04f.firebaseapp.com",
-    databaseURL: "https://cringechat-cc04f-default-rtdb.firebaseio.com",
-    projectId: "cringechat-cc04f",
-    storageBucket: "cringechat-cc04f.appspot.com",
-    messagingSenderId: "1078798953034",
-    appId: "1:1078798953034:web:78081799548359f3e294b3",
-    measurementId: "G-FGHETW90V3"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+document.addEventListener("DOMContentLoaded", function() {
 
-const typingUsers = new Set();
-let initialUsersLoaded = false;
-// NEW: Map to track when users last left to prevent duplicate messages on mobile
-const lastLeaveTimestamp = {};
+    const popupOverlay = document.getElementById('popup-overlay');
+    const welcomePopup = document.getElementById('welcome-popup');
+    const closePopupButton = document.getElementById('close-popup');
+    const usernameForm = document.getElementById('username-form');
+    const usernameInput = document.getElementById('username-input');
 
-let username = localStorage.getItem('username');
-while (!username || username.trim() === "") {
-    username = prompt("What's your username oomf?");
-    if (username) {
-        username = username.trim();
+    function showPopup() {
+        if (popupOverlay && welcomePopup) {
+            popupOverlay.style.display = 'block';
+            welcomePopup.style.display = 'block';
+        }
     }
-}
-localStorage.setItem('username', username);
 
-let randomColor = localStorage.getItem('coloredUsername');
-if (!randomColor) {
-    randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-    localStorage.setItem('coloredUsername', randomColor);
-}
-const coloredUsernameHtml = `<span style="color:${randomColor}">${username}</span>`;
+    function hidePopup() {
+        if (popupOverlay && welcomePopup) {
+            popupOverlay.style.display = 'none';
+            welcomePopup.style.display = 'none';
+        }
+    }
 
-const typingRef = db.ref('typing');
-const usersRef = db.ref('users');
-const pingsRef = db.ref('pings');
+    let username = localStorage.getItem('username');
+    if (!username) {
+        showPopup();
 
-const typingNotificationArea = document.getElementById("typing-notification");
-const backgroundMusicPlayer = document.getElementById("background-music-player");
-const musicSelector = document.getElementById("music-selector");
+        usernameForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            username = usernameInput.value.trim();
+            if (username) {
+                localStorage.setItem('username', username);
+                hidePopup();
+                window.location.reload();
+            }
+        });
 
-const joinSound = new Audio('sound/buddyin.mp3');
-const leaveSound = new Audio('sound/buddyout.mp3');
-const mentionSound = new Audio('sound/mention.mp3');
+        closePopupButton.addEventListener('click', () => {
+            hidePopup();
+        });
 
-let typingTimeout;
-let messageSendTimeout;
+        return; 
+    }
 
-const userOnlineRef = usersRef.child(username);
+    const firebaseConfig = {
+        apiKey: "AIzaSyAcyqPpPq0dXLez3MINPXfYvy6LnOCkbPM",
+        authDomain: "cringechat-cc04f.firebaseapp.com",
+        databaseURL: "https://cringechat-cc04f-default-rtdb.firebaseio.com",
+        projectId: "cringechat-cc04f",
+        storageBucket: "cringechat-cc04f.appspot.com",
+        messagingSenderId: "1078798953034",
+        appId: "1:1078798953034:web:78081799548359f3e294b3",
+        measurementId: "G-FGHETW90V3"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-userOnlineRef.onDisconnect().remove();
-userOnlineRef.set(true);
+    const typingUsers = new Set();
+    let initialUsersLoaded = false;
+    const lastLeaveTimestamp = {};
 
-// Listen for new users joining
-usersRef.on('child_added', function(snapshot) {
-    const joinedUsername = snapshot.key;
-    if (initialUsersLoaded && joinedUsername !== username) {
-        // Check if the user just reconnected within the debounce period
-        if (lastLeaveTimestamp[joinedUsername] && (Date.now() - lastLeaveTimestamp[joinedUsername] < 5000)) {
-            delete lastLeaveTimestamp[joinedUsername]; // Clear the timestamp
-            console.log(`${joinedUsername} reconnected quickly, suppressing leave message.`);
+    let randomColor = localStorage.getItem('coloredUsername');
+    if (!randomColor) {
+        randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+        localStorage.setItem('coloredUsername', randomColor);
+    }
+    const coloredUsernameHtml = `<span style="color:${randomColor}">${username}</span>`;
+
+    const typingRef = db.ref('typing');
+    const usersRef = db.ref('users');
+    const pingsRef = db.ref('pings');
+
+    const typingNotificationArea = document.getElementById("typing-notification");
+    const backgroundMusicPlayer = document.getElementById("background-music-player");
+    const musicSelector = document.getElementById("music-selector");
+
+    const joinSound = new Audio('sound/buddyin.mp3');
+    const leaveSound = new Audio('sound/buddyout.mp3');
+    const mentionSound = new Audio('sound/mention.mp3');
+
+    let typingTimeout;
+    let messageSendTimeout;
+
+    const userOnlineRef = usersRef.child(username);
+
+    userOnlineRef.onDisconnect().remove();
+    userOnlineRef.set(true).then(() => {
+        db.ref("messages").push({
+            msg: `<span style="color:green">${username} joined the chat</span>`,
+            createdAt: firebase.database.ServerValue.TIMESTAMP
+        });
+    });
+
+
+    usersRef.on('child_removed', function(snapshot) {
+        const leftUsername = snapshot.key;
+        if (leftUsername !== username) {
+            lastLeaveTimestamp[leftUsername] = Date.now();
+
+            setTimeout(() => {
+                if (lastLeaveTimestamp[leftUsername]) {
+                    db.ref("messages").push({
+                        msg: `<span style="color:red">${leftUsername} left the chat</span>`,
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    leaveSound.play().catch(e => console.error("Failed to play leave sound:", e));
+                    delete lastLeaveTimestamp[leftUsername];
+                }
+            }, 5000);
+        }
+    });
+
+
+    initialUsersLoaded = true;
+
+    document.getElementById("chat-txt").addEventListener("input", () => {
+        typingRef.child(username).set(true);
+        clearTimeout(typingTimeout);
+        clearTimeout(messageSendTimeout);
+
+        typingTimeout = setTimeout(() => {
+            typingRef.child(username).remove();
+        }, 3000);
+
+        messageSendTimeout = setTimeout(() => {
+            const chatTxtElement = document.getElementById("chat-txt");
+            if (chatTxtElement.value.trim() !== "") {
+                postChat({ preventDefault: () => {} });
+            }
+        }, 10000);
+    });
+
+    typingRef.on('child_added', function(snapshot) {
+        const typingUsername = snapshot.key;
+        if (typingUsername !== username) {
+            typingUsers.add(typingUsername);
+        }
+        updateTypingNotificationDisplay();
+    });
+
+    typingRef.on('child_removed', function(snapshot) {
+        const typingUsername = snapshot.key;
+        typingUsers.delete(typingUsername);
+        updateTypingNotificationDisplay();
+    });
+
+    function updateTypingNotificationDisplay() {
+        if (typingUsers.size === 0) {
+            typingNotificationArea.innerHTML = "";
+        } else if (typingUsers.size === 1) {
+            typingNotificationArea.innerHTML = `<small>${Array.from(typingUsers)[0]} is typing...</small>`;
+        } else {
+            const usersArray = Array.from(typingUsers);
+            const lastUser = usersArray.pop();
+            if (usersArray.length === 0) {
+                typingNotificationArea.innerHTML = `<small>${lastUser} is typing...</small>`;
+            } else {
+                typingNotificationArea.innerHTML = `<small>${usersArray.join(', ')} and ${lastUser} are typing...</small>`;
+            }
+        }
+    }
+
+    document.getElementById("send-message").addEventListener("submit", postChat);
+
+    function postChat(e) {
+        e.preventDefault();
+
+        clearTimeout(typingTimeout);
+        clearTimeout(messageSendTimeout);
+
+        const chatTxt = document.getElementById("chat-txt");
+        let message = chatTxt.value;
+        chatTxt.value = "";
+
+        typingRef.child(username).remove();
+
+        if (message.trim() === "") {
+            updateTypingNotificationDisplay();
+            return;
+        }
+
+        const mentionRegex = /@(\w+)/g;
+        let formattedMessage = message.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:blue;">$1</a>');
+        let mentionedUsers = [];
+
+        const matches = message.matchAll(mentionRegex);
+        for (const match of matches) {
+            const mentionedUsername = match[1];
+            mentionedUsers.push(mentionedUsername);
+            formattedMessage = formattedMessage.replace(
+                `@${mentionedUsername}`,
+                `<span class="mention">@${mentionedUsername}</span>`
+            );
+        }
+
+        const timestamp = firebase.database.ServerValue.TIMESTAMP;
+
+        if (message === "!help") {
+            db.ref("messages").push({
+                usr: "sYs (bot)",
+                msg: "<i style='color:gray'>someone used the !help command</i> Hi, I'm sYs",
+                createdAt: timestamp
+            });
         } else {
             db.ref("messages").push({
-                msg: `<span style="color:green">${joinedUsername} joined the chat</span>`,
-                createdAt: firebase.database.ServerValue.TIMESTAMP
+                usr: coloredUsernameHtml,
+                msg: formattedMessage,
+                createdAt: timestamp
             });
-            joinSound.play().catch(e => console.error("Failed to play join sound:", e));
         }
-    }
-});
 
-// Listen for users leaving
-usersRef.on('child_removed', function(snapshot) {
-    const leftUsername = snapshot.key;
-    if (leftUsername !== username) {
-        // Store the timestamp of the leave event
-        lastLeaveTimestamp[leftUsername] = Date.now();
-
-        // Use a timeout to only push the message if the user doesn't reconnect
-        setTimeout(() => {
-            if (lastLeaveTimestamp[leftUsername]) {
-                db.ref("messages").push({
-                    msg: `<span style="color:red">${leftUsername} left the chat</span>`,
-                    createdAt: firebase.database.ServerValue.TIMESTAMP
+        mentionedUsers.forEach(mentionedUsername => {
+            if (mentionedUsername !== username) {
+                pingsRef.child(mentionedUsername).push({
+                    sender: username,
+                    timestamp: timestamp,
+                    read: false
                 });
-                leaveSound.play().catch(e => console.error("Failed to play leave sound:", e));
-                delete lastLeaveTimestamp[leftUsername]; // Clean up the timestamp
             }
-        }, 5000); // 5-second debounce period
-    }
-});
+        });
 
-// Use a one-time listener to set the flag after initial users are loaded
-usersRef.once('value', () => {
-    initialUsersLoaded = true;
-});
-
-
-document.getElementById("chat-txt").addEventListener("input", () => {
-    typingRef.child(username).set(true);
-
-    clearTimeout(typingTimeout);
-    clearTimeout(messageSendTimeout);
-
-    typingTimeout = setTimeout(() => {
-        typingRef.child(username).remove();
-    }, 3000);
-
-    messageSendTimeout = setTimeout(() => {
-        const chatTxtElement = document.getElementById("chat-txt");
-        if (chatTxtElement.value.trim() !== "") {
-            postChat({ preventDefault: () => {} });
-        }
-    }, 10000);
-});
-
-typingRef.on('child_added', function(snapshot) {
-    const typingUsername = snapshot.key;
-    if (typingUsername !== username) {
-        typingUsers.add(typingUsername);
-    }
-    updateTypingNotificationDisplay();
-});
-
-typingRef.on('child_removed', function(snapshot) {
-    const typingUsername = snapshot.key;
-    typingUsers.delete(typingUsername);
-    updateTypingNotificationDisplay();
-});
-
-function updateTypingNotificationDisplay() {
-    if (typingUsers.size === 0) {
-        typingNotificationArea.innerHTML = "";
-    } else if (typingUsers.size === 1) {
-        typingNotificationArea.innerHTML = `<small>${Array.from(typingUsers)[0]} is typing...</small>`;
-    } else {
-        const usersArray = Array.from(typingUsers);
-        const lastUser = usersArray.pop();
-        if (usersArray.length === 0) {
-            typingNotificationArea.innerHTML = `<small>${lastUser} is typing...</small>`;
-        } else {
-            typingNotificationArea.innerHTML = `<small>${usersArray.join(', ')} and ${lastUser} are typing...</small>`;
-        }
-    }
-}
-
-document.getElementById("send-message").addEventListener("submit", postChat);
-
-function postChat(e) {
-    e.preventDefault();
-
-    clearTimeout(typingTimeout);
-    clearTimeout(messageSendTimeout);
-
-    const chatTxt = document.getElementById("chat-txt");
-    let message = chatTxt.value;
-    chatTxt.value = "";
-
-    typingRef.child(username).remove();
-
-    if (message.trim() === "") {
         updateTypingNotificationDisplay();
-        return;
+        scrollToBottom();
     }
 
-    const mentionRegex = /@(\w+)/g;
-    let formattedMessage = message.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:blue;">$1</a>');
-    let mentionedUsers = [];
+    function displayMessage(messageData) {
+        const messagesElement = document.getElementById("messages");
+        let msgContent = '';
 
-    const matches = message.matchAll(mentionRegex);
-    for (const match of matches) {
-        const mentionedUsername = match[1];
-        mentionedUsers.push(mentionedUsername);
-        formattedMessage = formattedMessage.replace(
-            `@${mentionedUsername}`,
-            `<span class="mention">@${mentionedUsername}</span>`
-        );
-    }
-
-    const timestamp = firebase.database.ServerValue.TIMESTAMP;
-
-    if (message === "!help") {
-        db.ref("messages").push({
-            usr: "sYs (bot)",
-            msg: "<i style='color:gray'>someone used the !help command</i> Hi, I'm sYs",
-            createdAt: timestamp
-        });
-    } else {
-        db.ref("messages").push({
-            usr: coloredUsernameHtml,
-            msg: formattedMessage,
-            createdAt: timestamp
-        });
-    }
-
-    mentionedUsers.forEach(mentionedUsername => {
-        if (mentionedUsername !== username) {
-            pingsRef.child(mentionedUsername).push({
-                sender: username,
-                timestamp: timestamp,
-                read: false
-            });
+        if (messageData.usr) {
+            msgContent = `<li>${messageData.usr} : ${messageData.msg}</li>`;
+        } else {
+            msgContent = `<li>${messageData.msg}</li>`;
         }
-    });
 
-    updateTypingNotificationDisplay();
-    scrollToBottom();
-}
-
-// Function to display a single message
-function displayMessage(messageData) {
-    const messagesElement = document.getElementById("messages");
-    let msgContent = '';
-
-    if (messageData.usr) {
-        msgContent = `<li>${messageData.usr} : ${messageData.msg}</li>`;
-    } else {
-        msgContent = `<li>${messageData.msg}</li>`;
+        messagesElement.innerHTML += msgContent;
+        scrollToBottom();
     }
 
-    messagesElement.innerHTML += msgContent;
-    scrollToBottom();
-}
-
-// Function to scroll the chat box to the bottom
-function scrollToBottom() {
-    const chatBox = document.querySelector(".chat-box");
-    if (chatBox) {
-        chatBox.scrollTop = chatBox.scrollHeight;
+    function scrollToBottom() {
+        const chatBox = document.querySelector(".chat-box");
+        if (chatBox) {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
     }
-}
-
-// First, fetch all existing messages once to populate the chat history
-const messagesRef = db.ref("messages");
-messagesRef.once("value", snapshot => {
-    let lastKey = null; // Variable to hold the key of the last message
-
-    // Load initial messages
-    snapshot.forEach(childSnapshot => {
-        displayMessage(childSnapshot.val());
-        lastKey = childSnapshot.key;
-    });
-
-    // After the initial load, set up a listener for new messages
-    if (lastKey) {
-        // Use a query to listen for messages added after the initial fetch
-        messagesRef.orderByKey().startAt(lastKey).on("child_added", newSnapshot => {
-            // This listener will also fire for the last key in the initial load, so we check
-            if (newSnapshot.key !== lastKey) {
-                displayMessage(newSnapshot.val());
-            }
-        });
-    } else {
-        // If there were no messages initially, just listen for all new ones
-        messagesRef.on("child_added", newSnapshot => {
-            displayMessage(newSnapshot.val());
-        });
-    }
-});
-
-const userPingsRef = pingsRef.child(username);
-let unreadPingsCount = 0;
-const originalTitle = document.title;
-
-userPingsRef.on('child_added', function(snapshot) {
-    const pingData = snapshot.val();
-    if (!pingData.read) {
-        unreadPingsCount++;
-        updatePageTitle();
-        mentionSound.play().catch(e => console.error("Failed to play mention sound:", e));
-    }
-});
-
-function updatePageTitle() {
-    if (unreadPingsCount > 0) {
-        const pingCountDisplay = unreadPingsCount > 9 ? "9+" : unreadPingsCount;
-        document.title = `(${pingCountDisplay}) ${originalTitle}`;
-    } else {
-        document.title = originalTitle;
-    }
-}
-
-window.addEventListener('focus', () => {
-    if (unreadPingsCount > 0) {
-        setTimeout(() => {
-            userPingsRef.once('value', snapshot => {
-                const updates = {};
-                snapshot.forEach(childSnapshot => {
-                    updates[childSnapshot.key + '/read'] = true;
-                });
-                if (Object.keys(updates).length > 0) {
-                    userPingsRef.update(updates);
-                }
-            });
-            unreadPingsCount = 0;
-            updatePageTitle();
-        }, 500);
-    }
-});
-
-// Music Player Functions
-function loadAndPlaySelectedMusic() {
-    const selectedSong = musicSelector.value;
-    if (selectedSong) {
-        backgroundMusicPlayer.src = selectedSong;
-        backgroundMusicPlayer.load();
-        playCurrentMusic();
-    } else {
-        backgroundMusicPlayer.pause();
-        backgroundMusicPlayer.src = "";
-    }
-}
-
-function playCurrentMusic() {
-    if (backgroundMusicPlayer.src) {
-        backgroundMusicPlayer.volume = 0.1;
-        backgroundMusicPlayer.play().catch(e => console.error("Failed to play music:", e));
-    }
-}
-
-function pauseCurrentMusic() {
-    backgroundMusicPlayer.pause();
-}
-
-function stopCurrentMusic() {
-    backgroundMusicPlayer.pause();
-    backgroundMusicPlayer.currentTime = 0;
-}
-
-function play() {
-    var audio = document.getElementById("audio");
-    audio.play();
-}
-
-// Global functions for HTML event handlers
-window.loadAndPlaySelectedMusic = loadAndPlaySelectedMusic;
-window.playCurrentMusic = playCurrentMusic;
-window.pauseCurrentMusic = pauseCurrentMusic;
-window.stopCurrentMusic = stopCurrentMusic;
-window.play = play;
-
-//Auto-Deletion
-function deleteOldMessages() {
-    // 20 minutes in milliseconds
-    const cutoff = Date.now() - 20 * 60 * 1000;
 
     const messagesRef = db.ref("messages");
-
-    const oldMessagesQuery = messagesRef.orderByChild("createdAt").endAt(cutoff);
-
-    oldMessagesQuery.once("value", (snapshot) => {
-        const updates = {};
-        snapshot.forEach((child) => {
-            updates[child.key] = null; // Set to null to delete the message
+    messagesRef.once("value", snapshot => {
+        let lastKey = null;
+        snapshot.forEach(childSnapshot => {
+            displayMessage(childSnapshot.val());
+            lastKey = childSnapshot.key;
         });
 
-        if (Object.keys(updates).length > 0) {
-            messagesRef.update(updates)
-                .then(() => {
-                    console.log(`Successfully deleted ${Object.keys(updates).length} old messages.`);
-                })
-                .catch((error) => {
-                    console.error("Failed to delete old messages:", error);
-                });
+        if (lastKey) {
+            messagesRef.orderByKey().startAt(lastKey).on("child_added", newSnapshot => {
+                if (newSnapshot.key !== lastKey) {
+                    displayMessage(newSnapshot.val());
+                }
+            });
+        } else {
+            messagesRef.on("child_added", newSnapshot => {
+                displayMessage(newSnapshot.val());
+            });
         }
     });
-}
 
-// Run the deletion function every 5 minutes
-setInterval(deleteOldMessages, 5 * 60 * 1000);
+    const userPingsRef = pingsRef.child(username);
+    let unreadPingsCount = 0;
+    const originalTitle = document.title;
 
-document.addEventListener("DOMContentLoaded", function() {
+    userPingsRef.on('child_added', function(snapshot) {
+        const pingData = snapshot.val();
+        if (!pingData.read) {
+            unreadPingsCount++;
+            updatePageTitle();
+            mentionSound.play().catch(e => console.error("Failed to play mention sound:", e));
+        }
+    });
+
+    function updatePageTitle() {
+        if (unreadPingsCount > 0) {
+            const pingCountDisplay = unreadPingsCount > 9 ? "9+" : unreadPingsCount;
+            document.title = `(${pingCountDisplay}) ${originalTitle}`;
+        } else {
+            document.title = originalTitle;
+        }
+    }
+
+    window.addEventListener('focus', () => {
+        if (unreadPingsCount > 0) {
+            setTimeout(() => {
+                userPingsRef.once('value', snapshot => {
+                    const updates = {};
+                    snapshot.forEach(childSnapshot => {
+                        updates[childSnapshot.key + '/read'] = true;
+                    });
+                    if (Object.keys(updates).length > 0) {
+                        userPingsRef.update(updates);
+                    }
+                });
+                unreadPingsCount = 0;
+                updatePageTitle();
+            }, 500);
+        }
+    });
+
+    function loadAndPlaySelectedMusic() {
+        const selectedSong = musicSelector.value;
+        if (selectedSong) {
+            backgroundMusicPlayer.src = selectedSong;
+            backgroundMusicPlayer.load();
+            playCurrentMusic();
+        } else {
+            backgroundMusicPlayer.pause();
+            backgroundMusicPlayer.src = "";
+        }
+    }
+
+    function playCurrentMusic() {
+        if (backgroundMusicPlayer.src) {
+            backgroundMusicPlayer.volume = 0.1;
+            backgroundMusicPlayer.play().catch(e => console.error("Failed to play music:", e));
+        }
+    }
+
+    function pauseCurrentMusic() {
+        backgroundMusicPlayer.pause();
+    }
+
+    function stopCurrentMusic() {
+        backgroundMusicPlayer.pause();
+        backgroundMusicPlayer.currentTime = 0;
+    }
+
+    function play() {
+        var audio = document.getElementById("audio");
+        audio.play();
+    }
+
+    window.loadAndPlaySelectedMusic = loadAndPlaySelectedMusic;
+    window.playCurrentMusic = playCurrentMusic;
+    window.pauseCurrentMusic = pauseCurrentMusic;
+    window.stopCurrentMusic = stopCurrentMusic;
+    window.play = play;
+
+    function deleteOldMessages() {
+        const cutoff = Date.now() - 20 * 60 * 1000;
+        const messagesRef = db.ref("messages");
+        const oldMessagesQuery = messagesRef.orderByChild("createdAt").endAt(cutoff);
+
+        oldMessagesQuery.once("value", (snapshot) => {
+            const updates = {};
+            snapshot.forEach((child) => {
+                updates[child.key] = null;
+            });
+
+            if (Object.keys(updates).length > 0) {
+                messagesRef.update(updates)
+                    .then(() => {
+                        console.log(`Successfully deleted ${Object.keys(updates).length} old messages.`);
+                    })
+                    .catch((error) => {
+                        console.error("Failed to delete old messages:", error);
+                    });
+            }
+        });
+    }
+
+    setInterval(deleteOldMessages, 5 * 60 * 1000);
+
     const titlebar = document.getElementById("music-window-titlebar");
     const windowToDrag = titlebar.parentElement;
 
@@ -387,12 +384,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     document.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
-
-        // Calculate new position
         const newX = e.clientX - offsetX;
         const newY = e.clientY - offsetY;
-
-        // Update element position
         windowToDrag.style.left = `${newX}px`;
         windowToDrag.style.top = `${newY}px`;
     });
