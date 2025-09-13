@@ -77,8 +77,7 @@ p1 {
   display: inline-block; 
   }
   .mention {
-    color: orange; 
-    font-weight: bold;
+    color: #ff7f32; 
 }
  .chat-window {
         max-width: 900px;
