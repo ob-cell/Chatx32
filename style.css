@@ -74,6 +74,7 @@ p1 {
 }
  .chat-window {
         max-width: 600px;
+        width: 400px
         margin: 20px auto;
     }
     .chat-box {
