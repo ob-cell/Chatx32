@@ -4,81 +4,13 @@
 <link rel="stylesheet" href="https://unpkg.com/xp.css" >
 <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
 <link rel="icon" href="/favicon.ico" type="image/x-icon">
-<style>
-  @font-face { font-family: XPTahoma; src: url('windows-xp-tahoma.otf'); } 
-.chat-box {
-  overflow-y: auto;
-  color: blue;
-  border: 3px solid #ccc;
-  border-radius: 5px;
-  margin: 20px auto;
-  max-width: 600px;
-  padding: 10px;
-}
-
-.header {
-  background-color: blue;
-  border-bottom: 1px solid #ccc;
-  border-radius: 1px 1px 0 0;
-  font-size: 18px;
-  font-weight: bold;
-  padding: 3px;
-  text-align: center;
-}
-body {
-   background-color: black;
-  font-family: XPTahoma;
-  font-size: 23px;
-
-}
-a {
-  text-decoration: none;
-}
-h1 {
-  color: white;
-  font-size: 21px;
-}
-p1 {
-  color: white;
-  font-size: 18px;
-}
-
-.music-controls {
-    text-align: center;
-    margin-top: 10px;
-    color: white;
-}
-.music-controls select, .music-controls button {
-    padding: 5px;
-    margin: 5px;
-}
-  .custom-emoji-img {
-  height: 1em; 
-  vertical-align: middle; 
-  width: auto; 
-  display: inline-block; 
-  }
-  .mention {
-    color: orange; 
-    font-weight: bold;
-}
- .chat-window {
-        max-width: 600px;
-        margin: 20px auto;
-    }
-    .chat-box {
-        height: 300px;
-        overflow-y: auto;
-        padding: 5px;
-	font-size: 26px;
-</style>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<center><img src="src/img/logo2.png" width="25%" height="25%">
-    </center>
-<title>Chatx32</title>
-</head>
+<head><title>Chatx32</title></head>
 <body>
+<center><img src="src/img/logo2.png" width="25%" height="25%"></center>
+    
+
 <div class="chat-window window">
     <div class="title-bar">
         <div class="title-bar-text">Chatx32 V0.0.1</div>
@@ -107,7 +39,7 @@ p1 {
            <hr>
            <br>
            <div class="window-body">
-        <center><b><h1 style="color: lime; font-size: 23px">Spatify.exe</h1></b></center>
+        <b><h1 style="color: lime; font-size: 23px">Spatify.exe</h1></b>
         <div class="music-controls">
             <label for="music-selector">Select Music:</label>
             <select id="music-selector" onchange="loadAndPlaySelectedMusic()">
@@ -132,43 +64,5 @@ p1 {
       <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-app.js"></script>
       <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-database.js"></script>
       <script src="script.js"></script>
-      <script>
-const backgroundMusicPlayer = document.getElementById("background-music-player");
-const musicSelector = document.getElementById("music-selector");
-
-function loadAndPlaySelectedMusic() {
-    const selectedSong = musicSelector.value;
-    if (selectedSong) {
-        backgroundMusicPlayer.src = selectedSong;
-        backgroundMusicPlayer.load();
-        playCurrentMusic();
-    } else {
-        backgroundMusicPlayer.pause();
-        backgroundMusicPlayer.src = "";
-    }
-}
-
-function playCurrentMusic() {
-    if (backgroundMusicPlayer.src) {
-        backgroundMusicPlayer.volume = 0.1;
-        backgroundMusicPlayer.play().catch(e => console.error("Failed to play music:", e));
-    }
-}
-
-function pauseCurrentMusic() {
-    backgroundMusicPlayer.pause();
-}
-
-function stopCurrentMusic() {
-    backgroundMusicPlayer.pause();
-    backgroundMusicPlayer.currentTime = 0;
-}
-
-function play()
-{
-  var audio = document.getElementById("audio");
-  audio.play();
-}
-      </script>
       </body>
 </html>

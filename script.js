@@ -280,3 +280,41 @@ window.addEventListener('focus', () => {
         }, 500);
     }
 });
+document.addEventListener("DOMContentLoaded", () => {
+const backgroundMusicPlayer = document.getElementById("background-music-player");
+const musicSelector = document.getElementById("music-selector");
+
+
+function loadAndPlaySelectedMusic() {
+    const selectedSong = musicSelector.value;
+    if (selectedSong) {
+        backgroundMusicPlayer.src = selectedSong;
+        backgroundMusicPlayer.load();
+        playCurrentMusic();
+    } else {
+        backgroundMusicPlayer.pause();
+        backgroundMusicPlayer.src = "";
+    }
+}
+
+function playCurrentMusic() {
+    if (backgroundMusicPlayer.src) {
+        backgroundMusicPlayer.volume = 0.1;
+        backgroundMusicPlayer.play().catch(e => console.error("Failed to play music:", e));
+    }
+}
+
+function pauseCurrentMusic() {
+    backgroundMusicPlayer.pause();
+}
+
+function stopCurrentMusic() {
+    backgroundMusicPlayer.pause();
+    backgroundMusicPlayer.currentTime = 0;
+}
+
+function play()
+{
+  var audio = document.getElementById("audio");
+  audio.play();
+}});
