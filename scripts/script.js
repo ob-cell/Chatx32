@@ -12,8 +12,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const typingUsers = new Set();
-// Correct way to handle new users to prevent duplicates on load
-let initialUsersLoaded = false; 
+let initialUsersLoaded = false;
 
 let username = localStorage.getItem('username');
 while (!username || username.trim() === "") {
@@ -31,8 +30,8 @@ if (!randomColor) {
 }
 const coloredUsernameHtml = `<span style="color:${randomColor}">${username}</span>`;
 
-const typingRef = firebase.database().ref('typing');
-const usersRef = firebase.database().ref('users');
+const typingRef = db.ref('typing');
+const usersRef = db.ref('users');
 const pingsRef = db.ref('pings');
 
 const typingNotificationArea = document.getElementById("typing-notification");
@@ -54,11 +53,10 @@ userOnlineRef.set(true);
 // Listen for new users joining
 usersRef.on('child_added', function(snapshot) {
     const joinedUsername = snapshot.key;
-    // Only post the message if the initial users have been loaded
     if (initialUsersLoaded && joinedUsername !== username) {
-        const timestamp = Date.now();
-        db.ref("messages/" + timestamp).set({
-            msg: `<span style="color:green">${joinedUsername} joined the chat</span>`
+        db.ref("messages").push({
+            msg: `<span style="color:green">${joinedUsername} joined the chat</span>`,
+            createdAt: firebase.database.ServerValue.TIMESTAMP
         });
         joinSound.play().catch(e => console.error("Failed to play join sound:", e));
     }
@@ -68,9 +66,9 @@ usersRef.on('child_added', function(snapshot) {
 usersRef.on('child_removed', function(snapshot) {
     const leftUsername = snapshot.key;
     if (leftUsername !== username) {
-        const timestamp = Date.now();
-        db.ref("messages/" + timestamp).set({
-            msg: `<span style="color:red">${leftUsername} left the chat</span>`
+        db.ref("messages").push({
+            msg: `<span style="color:red">${leftUsername} left the chat</span>`,
+            createdAt: firebase.database.ServerValue.TIMESTAMP
         });
         leaveSound.play().catch(e => console.error("Failed to play leave sound:", e));
     }
@@ -123,7 +121,7 @@ function updateTypingNotificationDisplay() {
         const usersArray = Array.from(typingUsers);
         const lastUser = usersArray.pop();
         if (usersArray.length === 0) {
-             typingNotificationArea.innerHTML = `<small>${lastUser} is typing...</small>`;
+            typingNotificationArea.innerHTML = `<small>${lastUser} is typing...</small>`;
         } else {
             typingNotificationArea.innerHTML = `<small>${usersArray.join(', ')} and ${lastUser} are typing...</small>`;
         }
@@ -138,7 +136,6 @@ function postChat(e) {
     clearTimeout(typingTimeout);
     clearTimeout(messageSendTimeout);
 
-    const timestamp = Date.now();
     const chatTxt = document.getElementById("chat-txt");
     let message = chatTxt.value;
     chatTxt.value = "";
@@ -164,15 +161,19 @@ function postChat(e) {
         );
     }
 
+    const timestamp = firebase.database.ServerValue.TIMESTAMP;
+
     if (message === "!help") {
-        db.ref("messages/" + timestamp).set({
+        db.ref("messages").push({
             usr: "sYs (bot)",
-            msg: "<i style='color:gray'>someone used the !help command</i> Hi, I'm sYs"
+            msg: "<i style='color:gray'>someone used the !help command</i> Hi, I'm sYs",
+            createdAt: timestamp
         });
     } else {
-        db.ref("messages/" + timestamp).set({
+        db.ref("messages").push({
             usr: coloredUsernameHtml,
             msg: formattedMessage,
+            createdAt: timestamp
         });
     }
 
@@ -190,8 +191,8 @@ function postChat(e) {
     scrollToBottom();
 }
 
-const fetchChat = db.ref("messages/");
-fetchChat.on("child_added", function (snapshot) {
+const fetchChat = db.ref("messages");
+fetchChat.on("child_added", function(snapshot) {
     const messages = snapshot.val();
     let msgContent = '';
     if (messages.usr) {
@@ -204,41 +205,10 @@ fetchChat.on("child_added", function (snapshot) {
 });
 
 function scrollToBottom() {
-    const chatBox = document.querySelector(".chat");
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function loadAndPlaySelectedMusic() {
-    const selectedSong = musicSelector.value;
-    if (selectedSong) {
-        backgroundMusicPlayer.src = selectedSong;
-        backgroundMusicPlayer.load();
-        playCurrentMusic();
-    } else {
-        backgroundMusicPlayer.pause();
-        backgroundMusicPlayer.src = "";
+    const chatBox = document.querySelector(".chat-box");
+    if (chatBox) {
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
-}
-
-function playCurrentMusic() {
-    if (backgroundMusicPlayer.src) {
-        backgroundMusicPlayer.volume = 0.1;
-        backgroundMusicPlayer.play().catch(e => console.error("Failed to play music:", e));
-    }
-}
-
-function pauseCurrentMusic() {
-    backgroundMusicPlayer.pause();
-}
-
-function stopCurrentMusic() {
-    backgroundMusicPlayer.pause();
-    backgroundMusicPlayer.currentTime = 0;
-}
-
-function play() {
-    var audio = document.getElementById("audio");
-    audio.play();
 }
 
 const userPingsRef = pingsRef.child(username);
@@ -280,11 +250,8 @@ window.addEventListener('focus', () => {
         }, 500);
     }
 });
-document.addEventListener("DOMContentLoaded", () => {
-const backgroundMusicPlayer = document.getElementById("background-music-player");
-const musicSelector = document.getElementById("music-selector");
 
-
+// Music Player Functions
 function loadAndPlaySelectedMusic() {
     const selectedSong = musicSelector.value;
     if (selectedSong) {
@@ -313,8 +280,44 @@ function stopCurrentMusic() {
     backgroundMusicPlayer.currentTime = 0;
 }
 
-function play()
-{
-  var audio = document.getElementById("audio");
-  audio.play();
-}});
+function play() {
+    var audio = document.getElementById("audio");
+    audio.play();
+}
+
+// Global functions for HTML event handlers
+window.loadAndPlaySelectedMusic = loadAndPlaySelectedMusic;
+window.playCurrentMusic = playCurrentMusic;
+window.pauseCurrentMusic = pauseCurrentMusic;
+window.stopCurrentMusic = stopCurrentMusic;
+window.play = play;
+
+//Auto-Deletion
+function deleteOldMessages() {
+  // 20 minutes in milliseconds
+  const cutoff = Date.now() - 20 * 60 * 1000;
+  
+  const messagesRef = db.ref("messages");
+
+  const oldMessagesQuery = messagesRef.orderByChild("createdAt").endAt(cutoff);
+
+  oldMessagesQuery.once("value", (snapshot) => {
+    const updates = {};
+    snapshot.forEach((child) => {
+      updates[child.key] = null; // Set to null to delete the message
+    });
+    
+    if (Object.keys(updates).length > 0) {
+      messagesRef.update(updates)
+        .then(() => {
+          console.log(`Successfully deleted ${Object.keys(updates).length} old messages.`);
+        })
+        .catch((error) => {
+          console.error("Failed to delete old messages:", error);
+        });
+    }
+  });
+}
+
+// Run the deletion function every 5 minutes
+setInterval(deleteOldMessages, 5 * 60 * 1000);
