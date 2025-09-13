@@ -13,6 +13,8 @@ const db = firebase.database();
 
 const typingUsers = new Set();
 let initialUsersLoaded = false;
+// NEW: Map to track when users last left to prevent duplicate messages on mobile
+const lastLeaveTimestamp = {};
 
 let username = localStorage.getItem('username');
 while (!username || username.trim() === "") {
@@ -54,11 +56,17 @@ userOnlineRef.set(true);
 usersRef.on('child_added', function(snapshot) {
     const joinedUsername = snapshot.key;
     if (initialUsersLoaded && joinedUsername !== username) {
-        db.ref("messages").push({
-            msg: `<span style="color:green">${joinedUsername} joined the chat</span>`,
-            createdAt: firebase.database.ServerValue.TIMESTAMP
-        });
-        joinSound.play().catch(e => console.error("Failed to play join sound:", e));
+        // Check if the user just reconnected within the debounce period
+        if (lastLeaveTimestamp[joinedUsername] && (Date.now() - lastLeaveTimestamp[joinedUsername] < 5000)) {
+            delete lastLeaveTimestamp[joinedUsername]; // Clear the timestamp
+            console.log(`${joinedUsername} reconnected quickly, suppressing leave message.`);
+        } else {
+            db.ref("messages").push({
+                msg: `<span style="color:green">${joinedUsername} joined the chat</span>`,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
+            joinSound.play().catch(e => console.error("Failed to play join sound:", e));
+        }
     }
 });
 
@@ -66,11 +74,20 @@ usersRef.on('child_added', function(snapshot) {
 usersRef.on('child_removed', function(snapshot) {
     const leftUsername = snapshot.key;
     if (leftUsername !== username) {
-        db.ref("messages").push({
-            msg: `<span style="color:red">${leftUsername} left the chat</span>`,
-            createdAt: firebase.database.ServerValue.TIMESTAMP
-        });
-        leaveSound.play().catch(e => console.error("Failed to play leave sound:", e));
+        // Store the timestamp of the leave event
+        lastLeaveTimestamp[leftUsername] = Date.now();
+
+        // Use a timeout to only push the message if the user doesn't reconnect
+        setTimeout(() => {
+            if (lastLeaveTimestamp[leftUsername]) {
+                db.ref("messages").push({
+                    msg: `<span style="color:red">${leftUsername} left the chat</span>`,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                });
+                leaveSound.play().catch(e => console.error("Failed to play leave sound:", e));
+                delete lastLeaveTimestamp[leftUsername]; // Clean up the timestamp
+            }
+        }, 5000); // 5-second debounce period
     }
 });
 
@@ -188,7 +205,21 @@ function postChat(e) {
     });
 
     updateTypingNotificationDisplay();
-    // Autoscroll is handled by the fetchChat listener, but good practice to have here as well
+    scrollToBottom();
+}
+
+// Function to display a single message
+function displayMessage(messageData) {
+    const messagesElement = document.getElementById("messages");
+    let msgContent = '';
+
+    if (messageData.usr) {
+        msgContent = `<li>${messageData.usr} : ${messageData.msg}</li>`;
+    } else {
+        msgContent = `<li>${messageData.msg}</li>`;
+    }
+
+    messagesElement.innerHTML += msgContent;
     scrollToBottom();
 }
 
@@ -200,18 +231,32 @@ function scrollToBottom() {
     }
 }
 
-// Listen for new messages and autoscroll
-const fetchChat = db.ref("messages");
-fetchChat.on("child_added", function(snapshot) {
-    const messages = snapshot.val();
-    let msgContent = '';
-    if (messages.usr) {
-        msgContent = `<li>${messages.usr} : ${messages.msg}</li>`;
+// First, fetch all existing messages once to populate the chat history
+const messagesRef = db.ref("messages");
+messagesRef.once("value", snapshot => {
+    let lastKey = null; // Variable to hold the key of the last message
+
+    // Load initial messages
+    snapshot.forEach(childSnapshot => {
+        displayMessage(childSnapshot.val());
+        lastKey = childSnapshot.key;
+    });
+
+    // After the initial load, set up a listener for new messages
+    if (lastKey) {
+        // Use a query to listen for messages added after the initial fetch
+        messagesRef.orderByKey().startAt(lastKey).on("child_added", newSnapshot => {
+            // This listener will also fire for the last key in the initial load, so we check
+            if (newSnapshot.key !== lastKey) {
+                displayMessage(newSnapshot.val());
+            }
+        });
     } else {
-        msgContent = `<li>${messages.msg}</li>`;
+        // If there were no messages initially, just listen for all new ones
+        messagesRef.on("child_added", newSnapshot => {
+            displayMessage(newSnapshot.val());
+        });
     }
-    document.getElementById("messages").innerHTML += msgContent;
-    scrollToBottom();
 });
 
 const userPingsRef = pingsRef.child(username);
