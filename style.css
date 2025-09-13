@@ -1,4 +1,4 @@
-@font-face { font-family: XPTahoma; src: url('windows-xp-tahoma.otf'); } 
+@font-face { font-family: XPTahoma; src: url('font/windows-xp-tahoma.otf'); } 
 body {
   display: grid; 
   place-items: center; 
