@@ -4,6 +4,14 @@ body {
   place-items: center; 
   min-height: 100vh;
   margin: 0;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+  background-image: url('src/img/background.jpg'); 
+  background-repeat: no-repeat; 
+  background-size: cover; 
+  background-position: center center; 
+  background-attachment: fixed; 
 }
 .chat {
   height: 400px; 
@@ -31,7 +39,6 @@ body {
   border-bottom: 1px solid #ccc;
   border-radius: 1px 1px 0 0;
   font-size: 18px;
-  font-weight: bold;
   padding: 3px;
   text-align: center;
 }
@@ -46,6 +53,7 @@ a {
 }
 h1 {
   color: white;
+  font-weight: normal;
   font-size: 21px;
 }
 p1 {
@@ -85,3 +93,15 @@ p1 {
   .typing-notification {
     font-size: 20px
   }
+.logo {
+  opacity: 0.6;
+  transition: opacity 1s ease-in-out;
+  -moz-transition: opacity 1s ease-in-out;
+  -webkit-transition: opacity 1s ease-in-out;
+}
+.logo:hover {
+  opacity: 1.0;
+  transition: opacity .55s ease-in-out;
+  -moz-transition: opacity .55s ease-in-out;
+  -webkit-transition: opacity .55s ease-in-out;
+}
