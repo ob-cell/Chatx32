@@ -73,8 +73,7 @@ p1 {
     font-weight: bold;
 }
  .chat-window {
-        max-width: 600px;
-        width: 400px
+        max-width: 900px;
         margin: 20px auto;
     }
     .chat-box {
