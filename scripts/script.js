@@ -321,3 +321,37 @@ function deleteOldMessages() {
 
 // Run the deletion function every 5 minutes
 setInterval(deleteOldMessages, 5 * 60 * 1000);
+
+document.addEventListener("DOMContentLoaded", function() {
+  const titlebar = document.getElementById("music-window-titlebar");
+  const windowToDrag = titlebar.parentElement;
+
+  let isDragging = false;
+  let offsetX, offsetY;
+
+  titlebar.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    offsetX = e.clientX - windowToDrag.offsetLeft;
+    offsetY = e.clientY - windowToDrag.offsetTop;
+    windowToDrag.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    
+    // Calculate new position
+    const newX = e.clientX - offsetX;
+    const newY = e.clientY - offsetY;
+
+    // Update element position
+    windowToDrag.style.left = `${newX}px`;
+    windowToDrag.style.top = `${newY}px`;
+  });
+
+  document.addEventListener("mouseup", () => {
+    isDragging = false;
+    windowToDrag.style.cursor = "grab";
+    document.body.style.userSelect = "auto";
+  });
+});
