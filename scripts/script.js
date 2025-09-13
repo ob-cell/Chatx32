@@ -188,20 +188,7 @@ function postChat(e) {
     });
 
     updateTypingNotificationDisplay();
-    scrollToBottom();
-}
-
-function displayMessage(messageData) {
-    const messagesElement = document.getElementById("messages");
-    let msgContent = '';
-
-    if (messageData.usr) {
-        msgContent = `<li>${messageData.usr} : ${messageData.msg}</li>`;
-    } else {
-        msgContent = `<li>${messageData.msg}</li>`;
-    }
-
-    messagesElement.innerHTML += msgContent;
+    // Autoscroll is handled by the fetchChat listener, but good practice to have here as well
     scrollToBottom();
 }
 
@@ -213,35 +200,19 @@ function scrollToBottom() {
     }
 }
 
-// First, fetch all existing messages once to populate the chat history
-const messagesRef = db.ref("messages");
-messagesRef.once("value", snapshot => {
-    let lastKey = null; // Variable to hold the key of the last message
-
-    // Load initial messages
-    snapshot.forEach(childSnapshot => {
-        displayMessage(childSnapshot.val());
-        lastKey = childSnapshot.key;
-    });
-
-    // After the initial load, set up a listener for new messages
-    if (lastKey) {
-        // Use a query to listen for messages added after the initial fetch
-        messagesRef.orderByKey().startAt(lastKey).on("child_added", newSnapshot => {
-            // This listener will also fire for the last key in the initial load, so we check
-            if (newSnapshot.key !== lastKey) {
-                displayMessage(newSnapshot.val());
-            }
-        });
+// Listen for new messages and autoscroll
+const fetchChat = db.ref("messages");
+fetchChat.on("child_added", function(snapshot) {
+    const messages = snapshot.val();
+    let msgContent = '';
+    if (messages.usr) {
+        msgContent = `<li>${messages.usr} : ${messages.msg}</li>`;
     } else {
-        // If there were no messages initially, just listen for all new ones
-        messagesRef.on("child_added", newSnapshot => {
-            displayMessage(newSnapshot.val());
-        });
+        msgContent = `<li>${messages.msg}</li>`;
     }
+    document.getElementById("messages").innerHTML += msgContent;
+    scrollToBottom();
 });
-
-
 
 const userPingsRef = pingsRef.child(username);
 let unreadPingsCount = 0;
