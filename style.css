@@ -124,6 +124,7 @@ p1 {
     transform: translate(-50%, -50%); 
     z-index: 1000; 
     font-size: 30px;
+    
 }
 
 .draggable-window {
