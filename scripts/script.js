@@ -41,6 +41,7 @@ document.addEventListener("DOMContentLoaded", function() {
         return; 
     }
 
+    // Initialize Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyAcyqPpPq0dXLez3MINPXfYvy6LnOCkbPM",
         authDomain: "cringechat-cc04f.firebaseapp.com",
@@ -53,6 +54,11 @@ document.addEventListener("DOMContentLoaded", function() {
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const drawingRef = db.ref('drawings');
+    const typingRef = db.ref('typing');
+    const usersRef = db.ref('users');
+    const pingsRef = db.ref('pings');
+    const messagesRef = db.ref("messages");
 
     const typingUsers = new Set();
     let initialUsersLoaded = false;
@@ -65,13 +71,14 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     const coloredUsernameHtml = `<span style="color:${randomColor}">${username}</span>`;
 
-    const typingRef = db.ref('typing');
-    const usersRef = db.ref('users');
-    const pingsRef = db.ref('pings');
-
     const typingNotificationArea = document.getElementById("typing-notification");
     const backgroundMusicPlayer = document.getElementById("background-music-player");
     const musicSelector = document.getElementById("music-selector");
+    
+    // Check for elements before assigning events
+    if (musicSelector) {
+        musicSelector.addEventListener('change', loadAndPlaySelectedMusic);
+    }
 
     const joinSound = new Audio('sound/buddyin.mp3');
     const leaveSound = new Audio('sound/buddyout.mp3');
@@ -81,15 +88,13 @@ document.addEventListener("DOMContentLoaded", function() {
     let messageSendTimeout;
 
     const userOnlineRef = usersRef.child(username);
-
     userOnlineRef.onDisconnect().remove();
     userOnlineRef.set(true).then(() => {
-        db.ref("messages").push({
+        messagesRef.push({
             msg: `<span style="color:green">${username} joined the chat</span>`,
             createdAt: firebase.database.ServerValue.TIMESTAMP
         });
     });
-
 
     usersRef.on('child_removed', function(snapshot) {
         const leftUsername = snapshot.key;
@@ -98,7 +103,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             setTimeout(() => {
                 if (lastLeaveTimestamp[leftUsername]) {
-                    db.ref("messages").push({
+                    messagesRef.push({
                         msg: `<span style="color:red">${leftUsername} left the chat</span>`,
                         createdAt: firebase.database.ServerValue.TIMESTAMP
                     });
@@ -109,25 +114,26 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-
     initialUsersLoaded = true;
 
-    document.getElementById("chat-txt").addEventListener("input", () => {
-        typingRef.child(username).set(true);
-        clearTimeout(typingTimeout);
-        clearTimeout(messageSendTimeout);
+    if (document.getElementById("chat-txt")) {
+        document.getElementById("chat-txt").addEventListener("input", () => {
+            typingRef.child(username).set(true);
+            clearTimeout(typingTimeout);
+            clearTimeout(messageSendTimeout);
 
-        typingTimeout = setTimeout(() => {
-            typingRef.child(username).remove();
-        }, 3000);
+            typingTimeout = setTimeout(() => {
+                typingRef.child(username).remove();
+            }, 3000);
 
-        messageSendTimeout = setTimeout(() => {
-            const chatTxtElement = document.getElementById("chat-txt");
-            if (chatTxtElement.value.trim() !== "") {
-                postChat({ preventDefault: () => {} });
-            }
-        }, 10000);
-    });
+            messageSendTimeout = setTimeout(() => {
+                const chatTxtElement = document.getElementById("chat-txt");
+                if (chatTxtElement.value.trim() !== "") {
+                    postChat({ preventDefault: () => {} });
+                }
+            }, 10000);
+        });
+    }
 
     typingRef.on('child_added', function(snapshot) {
         const typingUsername = snapshot.key;
@@ -144,6 +150,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     function updateTypingNotificationDisplay() {
+        if (!typingNotificationArea) return;
         if (typingUsers.size === 0) {
             typingNotificationArea.innerHTML = "";
         } else if (typingUsers.size === 1) {
@@ -159,7 +166,9 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    document.getElementById("send-message").addEventListener("submit", postChat);
+    if (document.getElementById("send-message")) {
+        document.getElementById("send-message").addEventListener("submit", postChat);
+    }
 
     function postChat(e) {
         e.preventDefault();
@@ -168,6 +177,7 @@ document.addEventListener("DOMContentLoaded", function() {
         clearTimeout(messageSendTimeout);
 
         const chatTxt = document.getElementById("chat-txt");
+        if (!chatTxt) return;
         let message = chatTxt.value;
         chatTxt.value = "";
 
@@ -195,13 +205,13 @@ document.addEventListener("DOMContentLoaded", function() {
         const timestamp = firebase.database.ServerValue.TIMESTAMP;
 
         if (message === "!help") {
-            db.ref("messages").push({
+            messagesRef.push({
                 usr: "sYs (bot)",
                 msg: "<i style='color:gray'>someone used the !help command</i> Hi, I'm sYs",
                 createdAt: timestamp
             });
         } else {
-            db.ref("messages").push({
+            messagesRef.push({
                 usr: coloredUsernameHtml,
                 msg: formattedMessage,
                 createdAt: timestamp
@@ -224,6 +234,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function displayMessage(messageData) {
         const messagesElement = document.getElementById("messages");
+        if (!messagesElement) return;
         let msgContent = '';
 
         if (messageData.usr) {
@@ -243,7 +254,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    const messagesRef = db.ref("messages");
     messagesRef.once("value", snapshot => {
         let lastKey = null;
         snapshot.forEach(childSnapshot => {
@@ -345,7 +355,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function deleteOldMessages() {
         const cutoff = Date.now() - 20 * 60 * 1000;
-        const messagesRef = db.ref("messages");
         const oldMessagesQuery = messagesRef.orderByChild("createdAt").endAt(cutoff);
 
         oldMessagesQuery.once("value", (snapshot) => {
@@ -368,31 +377,137 @@ document.addEventListener("DOMContentLoaded", function() {
 
     setInterval(deleteOldMessages, 5 * 60 * 1000);
 
-    const titlebar = document.getElementById("music-window-titlebar");
-    const windowToDrag = titlebar.parentElement;
+    // Draggable Functionality 
+    const makeDraggable = (windowElement, handleElement) => {
+        let isDragging = false;
+        let startX, startY, initialX, initialY;
 
-    let isDragging = false;
-    let offsetX, offsetY;
+        handleElement.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            initialX = windowElement.offsetLeft;
+            initialY = windowElement.offsetTop;
+            document.body.style.cursor = 'move'; 
+            handleElement.style.cursor = 'move';
+        });
 
-    titlebar.addEventListener("mousedown", (e) => {
-        isDragging = true;
-        offsetX = e.clientX - windowToDrag.offsetLeft;
-        offsetY = e.clientY - windowToDrag.offsetTop;
-        windowToDrag.style.cursor = "grabbing";
-        document.body.style.userSelect = "none";
-    });
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            windowElement.style.left = `${initialX + dx}px`;
+            windowElement.style.top = `${initialY + dy}px`;
+        });
 
-    document.addEventListener("mousemove", (e) => {
-        if (!isDragging) return;
-        const newX = e.clientX - offsetX;
-        const newY = e.clientY - offsetY;
-        windowToDrag.style.left = `${newX}px`;
-        windowToDrag.style.top = `${newY}px`;
-    });
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                document.body.style.cursor = 'default';
+                handleElement.style.cursor = 'crosshair';
+            }
+        });
+    };
 
-    document.addEventListener("mouseup", () => {
-        isDragging = false;
-        windowToDrag.style.cursor = "grab";
-        document.body.style.userSelect = "auto";
-    });
+    // Make the Music Player window draggable
+    const musicWindow = document.querySelector('.draggable-window');
+    const musicTitlebar = document.getElementById('music-window-titlebar');
+    if (musicWindow && musicTitlebar) {
+        makeDraggable(musicWindow, musicTitlebar);
+    }
+    
+    // Make the Chat window draggable
+    const chatWindow = document.querySelector('.chat-window');
+    const chatTitlebar = chatWindow.querySelector('.title-bar');
+    if (chatWindow && chatTitlebar) {
+        makeDraggable(chatWindow, chatTitlebar);
+    }
+
+    // Paint Canvas Functionality with Firebase
+    const canvas = document.getElementById('paint-canvas');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        const colorPicker = document.getElementById('color-picker');
+        const brushSize = document.getElementById('brush-size');
+        const clearButton = document.getElementById('clear-canvas');
+
+        canvas.width = 400;
+        canvas.height = 300;
+
+        let isPainting = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        ctx.lineWidth = brushSize.value;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = colorPicker.value;
+
+        const drawLine = (x1, y1, x2, y2, color, size) => {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = size;
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        };
+
+        canvas.addEventListener('mousedown', (e) => {
+            isPainting = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isPainting) return;
+            
+            const lineData = {
+                startX: lastX,
+                startY: lastY,
+                endX: e.offsetX,
+                endY: e.offsetY,
+                color: ctx.strokeStyle,
+                size: ctx.lineWidth
+            };
+            drawingRef.push(lineData);
+
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isPainting = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isPainting = false;
+        });
+
+        colorPicker.addEventListener('input', (e) => {
+            ctx.strokeStyle = e.target.value;
+        });
+
+        brushSize.addEventListener('input', (e) => {
+            ctx.lineWidth = e.target.value;
+        });
+
+        clearButton.addEventListener('click', () => {
+            drawingRef.push({ clear: true });
+        });
+
+        // Listen for drawing data from Firebase
+        drawingRef.on('child_added', (snapshot) => {
+            const data = snapshot.val();
+            if (data.clear) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            } else {
+                drawLine(data.startX, data.startY, data.endX, data.endY, data.color, data.size);
+            }
+        });
+
+        // Make the paint window draggable
+        const paintWindow = document.getElementById('paint-window');
+        const paintTitlebar = document.getElementById('paint-titlebar');
+        if (paintWindow && paintTitlebar) {
+            makeDraggable(paintWindow, paintTitlebar);
+        }
+    }
 });

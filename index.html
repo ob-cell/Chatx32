@@ -88,6 +88,29 @@
     </div>
   </div>
 </div>
+
+<!-- MS Paint -->
+<div class="draggable-window window" id="paint-window" style="position: absolute; left: 200px; top: 100px;">
+  <div class="title-bar" id="paint-titlebar">
+    <div class="title-bar-text">MSPaint V0.1</div>
+    <div class="title-bar-controls">
+      <button aria-label="Minimize"></button>
+      <button aria-label="Maximize"></button>
+      <button aria-label="Close"></button>
+    </div>
+  </div>
+  <div class="window-body">
+    <div class="field-row" style="margin-bottom: 8px;">
+      <label for="color-picker">Color:</label>
+      <input type="color" id="color-picker" value="#000000">
+      <label for="brush-size">Size:</label>
+      <input type="range" id="brush-size" min="1" max="50" value="5">
+      <button id="clear-canvas">Clear</button>
+    </div>
+    <canvas id="paint-canvas" style="border: 1px inset; background-color: white;"></canvas>
+  </div>
+</div>
+
            <audio id="background-music-player" loop volume="0.1"></audio>
       <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-app.js"></script>
       <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-database.js"></script>

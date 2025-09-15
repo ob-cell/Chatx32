@@ -125,3 +125,14 @@ p1 {
     z-index: 1000; 
     font-size: 23px;
 }
+
+.draggable-window {
+  position: absolute;
+
+  cursor: crosshair;
+}
+
+.draggable-window .title-bar {
+  cursor: grab;
+
+}
