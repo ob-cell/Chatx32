@@ -377,7 +377,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     setInterval(deleteOldMessages, 5 * 60 * 1000);
 
-    // Draggable Functionality 
+    // Draggable 
     const makeDraggable = (windowElement, handleElement) => {
         let isDragging = false;
         let startX, startY, initialX, initialY;
@@ -493,7 +493,7 @@ document.addEventListener("DOMContentLoaded", function() {
             drawingRef.push({ clear: true });
         });
 
-        // Listen for drawing data from Firebase
+       
         drawingRef.on('child_added', (snapshot) => {
             const data = snapshot.val();
             if (data.clear) {
@@ -503,7 +503,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
 
-        // Make the paint window draggable
+        // Make the MSpaint movable
         const paintWindow = document.getElementById('paint-window');
         const paintTitlebar = document.getElementById('paint-titlebar');
         if (paintWindow && paintTitlebar) {
