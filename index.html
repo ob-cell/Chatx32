@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="style.css">
 <head><title>Chatx32</title></head>
 <body>
-<center><img src="src/img/logo2.png" width="25%" height="25%" onContextMenu="return false" unselectable="on" class="logo"></center>
+<center><img src="src/img/isabelle.png" width="25%" height="25%" onContextMenu="return false" unselectable="on" class="logo"></center>
     
 <div id="popup-overlay" style="display:none;"></div>
 
@@ -90,7 +90,7 @@
   </div>
 </div>
 
-<!-- MS Paint -->
+
 <div class="draggable-window window" id="paint-window" style="position: absolute; left: 200px; top: 100px;">
   <div class="title-bar" id="paint-titlebar">
     <div class="title-bar-text">MSPaint V0.1</div>
@@ -111,11 +111,110 @@
     <canvas id="paint-canvas" style="border: 1px inset; background-color: white;"></canvas>
   </div>
 </div>
-
-           <audio id="background-music-player" loop volume="0.1"></audio>
+<audio id="birthday-sound-1" preload="auto" src="sound/childrencheer.mp3"></audio>
+<audio id="birthday-sound-2" preload="auto" src="sound/tada.mp3"></audio>           <audio id="background-music-player" loop volume="0.1"></audio>
+      <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
       <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-app.js"></script>
       <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-database.js"></script>
       <script src="scripts/script.js"></script>
       <script src="scripts/imageSelection.js"></script>
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          // Check if birthday popup has been shown before
+          const birthdayShown = sessionStorage.getItem('birthdayShown');
+          if (!birthdayShown) {
+            // Show birthday popup after username setup is complete
+            const username = localStorage.getItem('username');
+            if (username) {
+              setTimeout(() => {
+                showBirthdayPopup();
+              }, 1500);
+            }
+          }
+        });
+
+        function showBirthdayPopup() {
+          const overlay = document.createElement('div');
+          overlay.id = 'birthday-overlay';
+          overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+
+          const popup = document.createElement('div');
+          popup.className = 'window';
+          popup.style.cssText = 'z-index: 10000; min-width: 300px;';
+          popup.innerHTML = `
+            <div class="title-bar">
+              <div class="title-bar-text">🎉 Birthday 🎉</div>
+              <div class="title-bar-controls">
+                <button aria-label="Close" id="close-birthday-btn"></button>
+              </div>
+            </div>
+            <div class="window-body" style="font-size: 20px; text-align: center; padding: 20px;">
+              <p style="margin: 0; font-weight: bold; color: #ff1493;">Happy birthday Isabelle!!! 🎂</p>
+            </div>
+          `;
+
+          overlay.appendChild(popup);
+          document.body.appendChild(overlay);
+
+          
+          document.getElementById('close-birthday-btn').addEventListener('click', () => {
+            overlay.remove();
+            sessionStorage.setItem('birthdayShown', 'true');
+          });
+
+          
+          overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+              overlay.remove();
+              sessionStorage.setItem('birthdayShown', 'true');
+            }
+          });
+
+         
+          const sound1 = document.getElementById('birthday-sound-1');
+          const sound2 = document.getElementById('birthday-sound-2');
+          
+          if (sound1) {
+            sound1.volume = 0.7;
+            sound1.play().catch(e => console.error('Failed to play sound 1:', e));
+          }
+
+          setTimeout(() => {
+            if (sound2) {
+              sound2.volume = 0.7;
+              sound2.play().catch(e => console.error('Failed to play sound 2:', e));
+            }
+          }, 800);
+
+         
+          triggerBirthdayConfetti();
+        }
+
+        function triggerBirthdayConfetti() {
+          const duration = 3 * 1000;
+          const animationEnd = Date.now() + duration;
+
+          function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+          }
+
+          const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+              return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+            confetti({
+              particleCount: Math.floor(particleCount),
+              angle: randomInRange(55, 125),
+              spread: randomInRange(50, 70),
+              origin: { x: Math.random(), y: Math.random() - 0.2 },
+              colors: ['#ff1493', '#ff69b4', '#ffd700', '#00bfff', '#32cd32', '#ff6347']
+            });
+          }, 250);
+        }
+      </script>
       </body>
 </html>

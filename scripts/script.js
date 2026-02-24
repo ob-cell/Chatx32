@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", function() {
         return; 
     }
 
-    // Initialize Firebase
+
     const firebaseConfig = {
         apiKey: "AIzaSyAcyqPpPq0dXLez3MINPXfYvy6LnOCkbPM",
         authDomain: "cringechat-cc04f.firebaseapp.com",
@@ -410,14 +410,14 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     };
 
-    // Make the Music Player window draggable
+ 
     const musicWindow = document.querySelector('.draggable-window');
     const musicTitlebar = document.getElementById('music-window-titlebar');
     if (musicWindow && musicTitlebar) {
         makeDraggable(musicWindow, musicTitlebar);
     }
     
-    // Make the Chat window draggable
+
     const chatWindow = document.querySelector('.chat-window');
     const chatTitlebar = chatWindow.querySelector('.title-bar');
     if (chatWindow && chatTitlebar) {
@@ -503,7 +503,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
 
-        // Make the MSpaint movable
+
         const paintWindow = document.getElementById('paint-window');
         const paintTitlebar = document.getElementById('paint-titlebar');
         if (paintWindow && paintTitlebar) {
