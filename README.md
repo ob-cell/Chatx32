@@ -4,7 +4,7 @@
 You can call it anything you want. Larpy, sure, because it kind of is larpy
 
 <p align="center">
-	<img src="thumbnail.png" alt="ChatX32 thumbnail" />
+	<img src="src/img/thumbnail.png" alt="ChatX32 thumbnail" />
 </p>
 
 
