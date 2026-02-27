@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     let username = localStorage.getItem('username');
+    try { sessionStorage.setItem('birthdayShown', 'true'); } catch (e) {}
     if (!username) {
         showPopup();
 
@@ -75,7 +76,6 @@ document.addEventListener("DOMContentLoaded", function() {
     const backgroundMusicPlayer = document.getElementById("background-music-player");
     const musicSelector = document.getElementById("music-selector");
     
-    // Check for elements before assigning events
     if (musicSelector) {
         musicSelector.addEventListener('change', loadAndPlaySelectedMusic);
     }
@@ -202,6 +202,8 @@ document.addEventListener("DOMContentLoaded", function() {
             );
         }
 
+        
+
         const timestamp = firebase.database.ServerValue.TIMESTAMP;
 
         if (message === "!help") {
@@ -235,15 +237,32 @@ document.addEventListener("DOMContentLoaded", function() {
     function displayMessage(messageData) {
         const messagesElement = document.getElementById("messages");
         if (!messagesElement) return;
-        let msgContent = '';
+        
+        let rawMsg = messageData.msg || '';
+        
+        try {
+            rawMsg = rawMsg.replace(/\bIsabelle\b/gi, function(match) { return `<span class="rainbow-word">${match}</span>`; });
+        } catch (e) {
+            
+        }
 
+        let msgContent = '';
         if (messageData.usr) {
-            msgContent = `<li>${messageData.usr} : ${messageData.msg}</li>`;
+            msgContent = `<li>${messageData.usr} : ${rawMsg}</li>`;
         } else {
-            msgContent = `<li>${messageData.msg}</li>`;
+            msgContent = `<li>${rawMsg}</li>`;
         }
 
         messagesElement.innerHTML += msgContent;
+
+        
+        if (/\bIsabelle\b/i.test(messageData.msg || '')) {
+            try {
+                confetti({ particleCount: 80, spread: 120, colors: ['#ff0000','#ff7f00','#ffff00','#00ff00','#0000ff','#4b0082','#8b00ff'] });
+            } catch (e) {
+                
+            }
+        }
         scrollToBottom();
     }
 
@@ -377,7 +396,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     setInterval(deleteOldMessages, 5 * 60 * 1000);
 
-    // Draggable 
+    
     const makeDraggable = (windowElement, handleElement) => {
         let isDragging = false;
         let startX, startY, initialX, initialY;
@@ -424,7 +443,7 @@ document.addEventListener("DOMContentLoaded", function() {
         makeDraggable(chatWindow, chatTitlebar);
     }
 
-    // Paint Canvas Functionality with Firebase
+    
     const canvas = document.getElementById('paint-canvas');
     if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -509,5 +528,88 @@ document.addEventListener("DOMContentLoaded", function() {
         if (paintWindow && paintTitlebar) {
             makeDraggable(paintWindow, paintTitlebar);
         }
+
+        const settingsClearBtn = document.getElementById('settings-clear-chat');
+        if (settingsClearBtn) {
+            settingsClearBtn.addEventListener('click', () => {
+                if (!confirm('Clear chat for everyone? This will remove all messages.')) return;
+                messagesRef.remove()
+                .then(() => {
+                    messagesRef.push({ msg: `<span style="color:red">Chat cleared by ${username}</span>`, createdAt: firebase.database.ServerValue.TIMESTAMP });
+                })
+                .catch(err => console.error('Failed to clear chat:', err));
+            });
+        }
+
+        
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const closeSettingsBtn = document.getElementById('close-settings');
+        const bgSelect = document.getElementById('bg-select');
+        const disableSpatifyCheckbox = document.getElementById('disable-spatify');
+        const disablePaintCheckbox = document.getElementById('disable-paint');
+        const muteSoundsCheckbox = document.getElementById('mute-sounds');
+        const saveSettingsBtn = document.getElementById('save-settings');
+
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('chatx32_settings') || '{}');
+            if (settings.background) bgSelect.value = settings.background;
+            disableSpatifyCheckbox.checked = !!settings.disableSpatify;
+            disablePaintCheckbox.checked = !!settings.disablePaint;
+            muteSoundsCheckbox.checked = !!settings.muteSounds;
+            applySettings(settings);
+        }
+
+        function applySettings(settings) {
+            
+            const bg = (settings && settings.background) ? settings.background : 'background.jpg';
+            document.body.style.backgroundImage = `url('src/img/${bg}')`;
+
+            
+            const musicWindowEl = document.getElementById('music-window');
+            if (musicWindowEl) {
+                if (settings && settings.disableSpatify) {
+                    musicWindowEl.style.display = 'none';
+                    if (backgroundMusicPlayer) { backgroundMusicPlayer.pause(); }
+                } else {
+                    musicWindowEl.style.display = '';
+                }
+            }
+
+            
+            const paintWin = document.getElementById('paint-window');
+            if (paintWin) {
+                paintWin.style.display = (settings && settings.disablePaint) ? 'none' : '';
+            }
+
+            
+            const shouldMute = !!(settings && settings.muteSounds);
+            document.querySelectorAll('audio').forEach(a => { a.muted = shouldMute; });
+            if (typeof joinSound !== 'undefined') joinSound.muted = shouldMute;
+            if (typeof leaveSound !== 'undefined') leaveSound.muted = shouldMute;
+            if (typeof mentionSound !== 'undefined') mentionSound.muted = shouldMute;
+        }
+
+        function saveAndApply() {
+            const settings = {
+                background: bgSelect.value || 'background.jpg',
+                disableSpatify: disableSpatifyCheckbox.checked,
+                disablePaint: disablePaintCheckbox.checked,
+                muteSounds: muteSoundsCheckbox.checked
+            };
+            localStorage.setItem('chatx32_settings', JSON.stringify(settings));
+            applySettings(settings);
+        }
+
+        if (settingsBtn) settingsBtn.addEventListener('click', () => { settingsPanel.style.display = '' ; loadSettings(); });
+        if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => { settingsPanel.style.display = 'none'; });
+        if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', () => { saveAndApply(); settingsPanel.style.display = 'none'; });
+
+        if (bgSelect) bgSelect.addEventListener('change', saveAndApply);
+        if (disableSpatifyCheckbox) disableSpatifyCheckbox.addEventListener('change', saveAndApply);
+        if (disablePaintCheckbox) disablePaintCheckbox.addEventListener('change', saveAndApply);
+        if (muteSoundsCheckbox) muteSoundsCheckbox.addEventListener('change', saveAndApply);
+
+        loadSettings();
     }
 });
