@@ -3,6 +3,10 @@
 **Chatx32** is a chat client. Heavily inspired by 2000s chat applications such as MSN. and also is made in a way that makes it feels like Windows XP.
 You can call it anything you want. Larpy, sure, because it kind of is larpy
 
+<p align="center">
+	<img src="thumbnail.png" alt="ChatX32 thumbnail" />
+</p>
+
 
 ## 📝 Note
 
