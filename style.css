@@ -103,19 +103,19 @@ p1 {
     padding: 8px;
 }
 
-.rainbow-word {
-  background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
+.trans-word {
+  background: linear-gradient(180deg, #5BCEFA, #F5A9B8, #FFFFFF, #F5A9B8, #5BCEFA);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  background-size: 200% 200%;
-  animation: rainbow-move 2.5s linear infinite;
+  background-size: 100% 200%;
+  animation: trans-move 2s linear infinite;
 }
 
-@keyframes rainbow-move {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+@keyframes trans-move {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 0% 100%; }
+  100% { background-position: 0% 0%; }
 }
   .typing-notification {
     font-size: 20px

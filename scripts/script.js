@@ -241,7 +241,7 @@ document.addEventListener("DOMContentLoaded", function() {
         let rawMsg = messageData.msg || '';
         
         try {
-            rawMsg = rawMsg.replace(/\bIsabelle\b/gi, function(match) { return `<span class="rainbow-word">${match}</span>`; });
+            rawMsg = rawMsg.replace(/\bIsabelle\b/gi, function(match) { return `<span class="trans-word">${match}</span>`; });
         } catch (e) {
             
         }
