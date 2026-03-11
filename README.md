@@ -7,6 +7,7 @@ You can call it anything you want. Larpy, sure, because it kind of is larpy
 	<img src="src/img/thumbnail.png" alt="ChatX32 thumbnail" />
 </p>
 
+This project is now archived. I've been working on it for 3 years now and it was fun. Goodbye ChatX32 and it over 20 users scattered throughout all the years who were also my close friends at the time.
 
 ## 📝 Note
 
