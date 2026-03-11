@@ -209,7 +209,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (message === "!help") {
             messagesRef.push({
                 usr: "sYs (bot)",
-                msg: "<i style='color:gray'>someone used the !help command</i> Hi, I'm sYs",
+                msg: "<i style='color:gray'>someone used the !help command</i> Hi, this is ChatX32, a simple chat website, just talk with randos here",
                 createdAt: timestamp
             });
         } else {
@@ -239,7 +239,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!messagesElement) return;
         
         let rawMsg = messageData.msg || '';
-        
+        // hehe :3
         try {
             rawMsg = rawMsg.replace(/\bIsabelle\b/gi, function(match) { return `<span class="trans-word">${match}</span>`; });
         } catch (e) {
@@ -255,10 +255,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
         messagesElement.innerHTML += msgContent;
 
-        
+        // confetti stuff
         if (/\bIsabelle\b/i.test(messageData.msg || '')) {
             try {
-                confetti({ particleCount: 80, spread: 120, colors: ['#ff0000','#ff7f00','#ffff00','#00ff00','#0000ff','#4b0082','#8b00ff'] });
+                confetti({ particleCount: 80, spread: 120, colors: ['#f7affd','#fffdff','#a5cef0','#eb9ed8','#e01775','#47b8cc','#eae5ee'] });
             } catch (e) {
                 
             }
@@ -529,87 +529,78 @@ document.addEventListener("DOMContentLoaded", function() {
             makeDraggable(paintWindow, paintTitlebar);
         }
 
-        const settingsClearBtn = document.getElementById('settings-clear-chat');
-        if (settingsClearBtn) {
-            settingsClearBtn.addEventListener('click', () => {
-                if (!confirm('Clear chat for everyone? This will remove all messages.')) return;
-                messagesRef.remove()
-                .then(() => {
-                    messagesRef.push({ msg: `<span style="color:red">Chat cleared by ${username}</span>`, createdAt: firebase.database.ServerValue.TIMESTAMP });
-                })
-                .catch(err => console.error('Failed to clear chat:', err));
-            });
-        }
 
         
-        const settingsBtn = document.getElementById('settings-btn');
-        const settingsPanel = document.getElementById('settings-panel');
-        const closeSettingsBtn = document.getElementById('close-settings');
-        const bgSelect = document.getElementById('bg-select');
-        const disableSpatifyCheckbox = document.getElementById('disable-spatify');
-        const disablePaintCheckbox = document.getElementById('disable-paint');
-        const muteSoundsCheckbox = document.getElementById('mute-sounds');
-        const saveSettingsBtn = document.getElementById('save-settings');
+const settingsBtn = document.getElementById('settings-btn');
+const settingsPanel = document.getElementById('settings-panel');
+const closeSettingsBtn = document.getElementById('close-settings');
+const bgSelect = document.getElementById('bg-select');
+const disableSpatifyCheckbox = document.getElementById('disable-spatify');
+const disablePaintCheckbox = document.getElementById('disable-paint');
+const muteSoundsCheckbox = document.getElementById('mute-sounds');
+const saveSettingsBtn = document.getElementById('save-settings');
 
-        function loadSettings() {
-            const settings = JSON.parse(localStorage.getItem('chatx32_settings') || '{}');
-            if (settings.background) bgSelect.value = settings.background;
-            disableSpatifyCheckbox.checked = !!settings.disableSpatify;
-            disablePaintCheckbox.checked = !!settings.disablePaint;
-            muteSoundsCheckbox.checked = !!settings.muteSounds;
-            applySettings(settings);
-        }
+function loadSettings() {
+    const settings = JSON.parse(localStorage.getItem('chatx32_settings') || '{}');
+    if (settings.background && bgSelect) bgSelect.value = settings.background;
+    if (disableSpatifyCheckbox) disableSpatifyCheckbox.checked = !!settings.disableSpatify;
+    if (disablePaintCheckbox) disablePaintCheckbox.checked = !!settings.disablePaint;
+    if (muteSoundsCheckbox) muteSoundsCheckbox.checked = !!settings.muteSounds;
+    applySettings(settings);
+}
 
-        function applySettings(settings) {
-            
-            const bg = (settings && settings.background) ? settings.background : 'background.jpg';
-            document.body.style.backgroundImage = `url('src/img/${bg}')`;
+function applySettings(settings) {
+    const bg = (settings && settings.background) ? settings.background : 'background.jpg';
+    document.body.style.backgroundImage = `url('src/img/${bg}')`;
 
-            
-            const musicWindowEl = document.getElementById('music-window');
-            if (musicWindowEl) {
-                if (settings && settings.disableSpatify) {
-                    musicWindowEl.style.display = 'none';
-                    if (backgroundMusicPlayer) { backgroundMusicPlayer.pause(); }
-                } else {
-                    musicWindowEl.style.display = '';
-                }
+    const musicWindowEl = document.getElementById('music-window');
+    if (musicWindowEl) {
+        if (settings && settings.disableSpatify) {
+            musicWindowEl.style.display = 'none';
+            if (typeof backgroundMusicPlayer !== 'undefined' && backgroundMusicPlayer) { 
+                backgroundMusicPlayer.pause(); 
             }
-
-            
-            const paintWin = document.getElementById('paint-window');
-            if (paintWin) {
-                paintWin.style.display = (settings && settings.disablePaint) ? 'none' : '';
-            }
-
-            
-            const shouldMute = !!(settings && settings.muteSounds);
-            document.querySelectorAll('audio').forEach(a => { a.muted = shouldMute; });
-            if (typeof joinSound !== 'undefined') joinSound.muted = shouldMute;
-            if (typeof leaveSound !== 'undefined') leaveSound.muted = shouldMute;
-            if (typeof mentionSound !== 'undefined') mentionSound.muted = shouldMute;
+        } else {
+            musicWindowEl.style.display = '';
         }
+    }
 
-        function saveAndApply() {
-            const settings = {
-                background: bgSelect.value || 'background.jpg',
-                disableSpatify: disableSpatifyCheckbox.checked,
-                disablePaint: disablePaintCheckbox.checked,
-                muteSounds: muteSoundsCheckbox.checked
-            };
-            localStorage.setItem('chatx32_settings', JSON.stringify(settings));
-            applySettings(settings);
-        }
+    const paintWin = document.getElementById('paint-window');
+    if (paintWin) {
+        paintWin.style.display = (settings && settings.disablePaint) ? 'none' : '';
+    }
 
-        if (settingsBtn) settingsBtn.addEventListener('click', () => { settingsPanel.style.display = '' ; loadSettings(); });
-        if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => { settingsPanel.style.display = 'none'; });
-        if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', () => { saveAndApply(); settingsPanel.style.display = 'none'; });
+    const shouldMute = !!(settings && settings.muteSounds);
+    document.querySelectorAll('audio').forEach(a => { a.muted = shouldMute; });
+    if (typeof joinSound !== 'undefined') joinSound.muted = shouldMute;
+    if (typeof leaveSound !== 'undefined') leaveSound.muted = shouldMute;
+    if (typeof mentionSound !== 'undefined') mentionSound.muted = shouldMute;
+}
 
-        if (bgSelect) bgSelect.addEventListener('change', saveAndApply);
-        if (disableSpatifyCheckbox) disableSpatifyCheckbox.addEventListener('change', saveAndApply);
-        if (disablePaintCheckbox) disablePaintCheckbox.addEventListener('change', saveAndApply);
-        if (muteSoundsCheckbox) muteSoundsCheckbox.addEventListener('change', saveAndApply);
+function saveAndApply() {
+    const settings = {
+        background: bgSelect ? bgSelect.value : 'background.jpg',
+        disableSpatify: disableSpatifyCheckbox ? disableSpatifyCheckbox.checked : false,
+        disablePaint: disablePaintCheckbox ? disablePaintCheckbox.checked : false,
+        muteSounds: muteSoundsCheckbox ? muteSoundsCheckbox.checked : false
+    };
+    localStorage.setItem('chatx32_settings', JSON.stringify(settings));
+    applySettings(settings);
+}
 
-        loadSettings();
+// Open/Close Handlers
+if (settingsBtn) settingsBtn.addEventListener('click', () => { settingsPanel.style.display = ''; loadSettings(); });
+if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => { settingsPanel.style.display = 'none'; });
+if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', () => { saveAndApply(); settingsPanel.style.display = 'none'; });
+
+// Instant Update Handlers
+// These ensure that as soon as you click the checkbox (or its label), it saves and applies.
+if (bgSelect) bgSelect.addEventListener('change', saveAndApply);
+if (disableSpatifyCheckbox) disableSpatifyCheckbox.addEventListener('change', saveAndApply);
+if (disablePaintCheckbox) disablePaintCheckbox.addEventListener('change', saveAndApply);
+if (muteSoundsCheckbox) muteSoundsCheckbox.addEventListener('change', saveAndApply);
+
+// Initial Load
+loadSettings();
     }
 });
