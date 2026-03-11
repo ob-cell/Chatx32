@@ -16,18 +16,18 @@
 <div id="welcome-popup" style="display:none;">
     <div class="window">
         <div class="title-bar">
-            <div class="title-bar-text">Welcome!</div>
+            <div class="title-bar-text">Welcome to Chatx32!</div>
             <div class="title-bar-controls">
                 <button aria-label="Close" id="close-popup"></button>
             </div>
         </div>
-        <div class="window-body" style="font-size: 19px;">
+        <div class="window-body" style="font-size: 20px;">
             <p>Welcome to ChatX32, let's get you chatting. <br>
              Please enter your username:</p>
             <form id="username-form">
                 <div class="field-row">
-                    <label for="username-input">Username:</label>
-                    <input type="text" id="username-input" required>
+                    <label for="username-input" style="font-size: 18px;">Username:</label>
+                    <input type="text" id="username-input" size="20" required>
                 </div>
                 <br>
                 <div class="field-row">
@@ -40,7 +40,7 @@
 
 <div class="chat-window window">
     <div class="title-bar">
-        <div class="title-bar-text">Chatx32 V0.0.4</div>
+        <div class="title-bar-text">Chatx32 V0.0.6</div>
         <div class="title-bar-controls">
             <button aria-label="Minimize"></button>
             <button aria-label="Maximize"></button>
@@ -71,12 +71,13 @@
       <button aria-label="Close"></button>
     </div>
   </div>
+   <!-- these are the windows in the app, theres so far the music player and the paint (which is multiplayer btw)-->
   <div class="window-body">
     <center><h1 style="color: black; font-size: 30px">Music Player</h1></center>
     <div class="music-controls">
       <label for="music-selector" style="color:black;">Select Music:</label>
       <select id="music-selector" onchange="loadAndPlaySelectedMusic()">
-        <option value="">-- No Music --</option>
+        <option value="">No Music</option>
         <option value="music/lotus.mp3">Lotus</option>
         <option value="music/Body Measurement.mp3">Body Measurement (Nintendo)</option>
         <option value="music/Editing a Mii.mp3">Editing a Mii (Nintendo)</option>
@@ -148,6 +149,7 @@
     <canvas id="paint-canvas" style="border: 1px inset; background-color: white;"></canvas>
   </div>
 </div>
+<!-- old Isabelle edition sound -->
 <audio id="birthday-sound-1" preload="auto" src="sound/childrencheer.mp3"></audio>
 <audio id="birthday-sound-2" preload="auto" src="sound/tada.mp3"></audio>           <audio id="background-music-player" loop volume="0.1"></audio>
       <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>

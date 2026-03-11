@@ -112,6 +112,11 @@ p1 {
   animation: trans-move 2s linear infinite;
 }
 
+
+.field-row {
+  place-items: center;
+}
+
 @keyframes trans-move {
   0% { background-position: 0% 0%; }
   50% { background-position: 0% 100%; }
